@@ -1,4 +1,4 @@
-package org.mirza.dto;
+package org.mirza.dto.request;
 
 public class PostRequestDto {
 }

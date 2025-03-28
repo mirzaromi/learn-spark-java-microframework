@@ -5,8 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.http.HttpStatus;
 import org.mirza.dto.BaseResponse;
 import org.mirza.dto.ErrorResponse;
-import org.mirza.dto.PostResponseDto;
+import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
+import org.mirza.util.DatabaseUtil;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import spark.Request;
@@ -17,6 +18,8 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -97,18 +100,41 @@ public class Main {
 
             Post post = parseAndValidatePostRequest(req, gson, validator);
 
-            post.setId(id);
+            Boolean isSuccessDBOperation = true;
 
-            database.computeIfAbsent(id, k -> post);
+            try (Connection connection = DatabaseUtil.getConnection()) {
+                // create SQL Query to Insert data to DB
+                String query = "INSERT INTO posts (title, content, is_deleted) VALUES (?, ?, ?)";
 
-            PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
+                try (PreparedStatement ps = connection.prepareStatement(query)) {
+                    ps.setString(1, post.getTitle());
+                    ps.setString(2, post.getContent());
+                    ps.setBoolean(3, post.isDeleted());
 
-            log.info("Suucess update post with id : {}", id);
+                    int rowsAffected = ps.executeUpdate();
+                    if (!(rowsAffected > 0))
+                        isSuccessDBOperation = false;
 
-            res.status(HttpStatus.CREATED_201);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                throw new RuntimeException("Database error");
+            }
 
-            BaseResponse<PostResponseDto> successCreateAPost = BaseResponse.generateResponse(HttpStatus.CREATED_201, "Success create a post", postResponseDto);
-            return gson.toJson(successCreateAPost);
+            if (Boolean.TRUE.equals(isSuccessDBOperation)) {
+                PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
+
+                log.info("Suucess update post with id : {}", id);
+
+                res.status(HttpStatus.CREATED_201);
+
+                BaseResponse<PostResponseDto> successCreateAPost = BaseResponse.generateResponse(HttpStatus.CREATED_201, "Success create a post", postResponseDto);
+                return gson.toJson(successCreateAPost);
+            }
+
+            throw new RuntimeException("Failed to create post.");
+
         });
 
         // update post

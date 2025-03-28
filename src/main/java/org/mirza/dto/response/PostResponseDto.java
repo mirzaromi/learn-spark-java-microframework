@@ -1,4 +1,4 @@
-package org.mirza.dto;
+package org.mirza.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
