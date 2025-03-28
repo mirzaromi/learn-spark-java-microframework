@@ -20,6 +20,7 @@ import javax.validation.ValidatorFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -70,9 +71,26 @@ public class Main {
         // get all post
         get("/", (req, res) -> {
 
-            List<Post> posts = database.values().stream()
-                    .filter(Predicate.not(Post::isDeleted))
-                    .toList();
+            List<Post> posts = new ArrayList<>();
+
+            try (Connection connection = DatabaseUtil.getConnection()) {
+                String query = "SELECT * FROM posts";
+                try (PreparedStatement statement = connection.prepareStatement(query)) {
+                    ResultSet resultSet = statement.executeQuery();
+                    while (resultSet.next()) {
+                        Integer id = resultSet.getInt("id");
+                        String title = resultSet.getString("title");
+                        String content = resultSet.getString("content");
+                        boolean isDeleted = resultSet.getBoolean("is_deleted");
+
+                        posts.add(new Post(id, title, content, isDeleted));
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                throw new RuntimeException("Database error");
+            }
 
             List<PostResponseDto> postResponseDtos = modelMapper.map(posts, new TypeToken<List<PostResponseDto>>(){}.getType());
 
