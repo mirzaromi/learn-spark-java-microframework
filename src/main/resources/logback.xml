@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Console Appender for colored output -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Colored log format -->
+            <pattern>
+                %green(%d{yyyy-MM-dd HH:mm:ss}) %-5level [%thread] %cyan(%logger{36}) - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root Logger Configuration (Set to INFO level) -->
+    <root level="INFO">
+        <appender-ref ref="console"/>
+    </root>
+
+    <!-- Optional: Logger for specific classes -->
+    <!-- <logger name="com.example" level="DEBUG"/> -->
+
+</configuration>
