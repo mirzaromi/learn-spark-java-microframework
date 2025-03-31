@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.http.HttpStatus;
 import org.mirza.dto.BaseResponse;
 import org.mirza.dto.ErrorResponse;
+import org.mirza.dto.pagination.PaginationDto;
 import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
 import org.mirza.exception.DatabaseException;
@@ -74,12 +75,21 @@ public class Main {
 
         // get all post
         get("/", (req, res) -> {
+            int page = Optional.ofNullable(req.queryParams("page")).map(Integer::parseInt).orElse(1);
+            int size = Optional.ofNullable(req.queryParams("size")).map(Integer::parseInt).orElse(10);
+            String orderBy = Optional.ofNullable(req.queryParams("orderBy")).map(String::trim).orElse("id");
+
+            int offset = (page - 1) * size;
+            int totalData = 0;
 
             List<Post> posts = new ArrayList<>();
 
             try (Connection connection = DatabaseUtil.getConnection()) {
-                String query = "SELECT * FROM posts WHERE is_deleted = false";
+                String query = "SELECT * FROM posts WHERE is_deleted = false ORDER BY ? LIMIT ? OFFSET ?";
                 try (PreparedStatement statement = connection.prepareStatement(query)) {
+                    statement.setString(1, orderBy);
+                    statement.setInt(2, size);
+                    statement.setInt(3, offset);
                     ResultSet resultSet = statement.executeQuery();
                     while (resultSet.next()) {
                         Integer id = resultSet.getInt("id");
@@ -90,15 +100,32 @@ public class Main {
                         posts.add(new Post(id, title, content, isDeleted));
                     }
                 }
+
+                try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM posts WHERE is_deleted = false")) {
+                    ResultSet resultSet = statement.executeQuery();
+                    if (resultSet.next()) {
+                        totalData = resultSet.getInt(1);
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
                 throw new DatabaseException(DATABASE_ERROR);
             }
 
+            int totalPage = (int) Math.ceil((double) totalData / size);
+
             List<PostResponseDto> postResponseDtos = modelMapper.map(posts, new TypeToken<List<PostResponseDto>>(){}.getType());
 
-            BaseResponse<List<PostResponseDto>> successGetAllPosts = BaseResponse.generateSuccessResponse("Success get all posts", postResponseDtos);
+            PaginationDto<List<PostResponseDto>> paginationDto = new PaginationDto<>();
+            paginationDto.setPage(page);
+            paginationDto.setSize(size);
+            paginationDto.setTotalData(totalData);
+            paginationDto.setTotalPage(totalPage);
+            paginationDto.setData(postResponseDtos);
+
+
+            var successGetAllPosts = BaseResponse.generateSuccessResponse("Success get all posts", paginationDto);
             return gson.toJson(successGetAllPosts);
         });
 
