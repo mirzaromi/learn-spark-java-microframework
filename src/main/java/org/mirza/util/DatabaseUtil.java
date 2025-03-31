@@ -20,7 +20,6 @@ public class DatabaseUtil {
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
         }
 
-        log.info("Connected to database");
         return connection;
     }
 

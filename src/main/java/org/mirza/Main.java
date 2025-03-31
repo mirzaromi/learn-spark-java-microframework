@@ -7,10 +7,14 @@ import org.mirza.dto.BaseResponse;
 import org.mirza.dto.ErrorResponse;
 import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
+import org.mirza.exception.DatabaseException;
+import org.mirza.exception.NotFoundException;
+import org.mirza.exception.ValidationException;
 import org.mirza.util.DatabaseUtil;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import spark.Request;
+import spark.Response;
 
 
 import javax.validation.ConstraintViolation;
@@ -22,13 +26,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.*;
-import java.util.function.Predicate;
 
 import static spark.Spark.*;
 
 @Slf4j
 public class Main {
 
+    public static final String DATABASE_ERROR = "Database error";
     static Map<Integer, Post> database = new TreeMap<>();
 
     public static void main(String[] args) {
@@ -74,7 +78,7 @@ public class Main {
             List<Post> posts = new ArrayList<>();
 
             try (Connection connection = DatabaseUtil.getConnection()) {
-                String query = "SELECT * FROM posts";
+                String query = "SELECT * FROM posts WHERE is_deleted = false";
                 try (PreparedStatement statement = connection.prepareStatement(query)) {
                     ResultSet resultSet = statement.executeQuery();
                     while (resultSet.next()) {
@@ -89,7 +93,7 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
-                throw new RuntimeException("Database error");
+                throw new DatabaseException(DATABASE_ERROR);
             }
 
             List<PostResponseDto> postResponseDtos = modelMapper.map(posts, new TypeToken<List<PostResponseDto>>(){}.getType());
@@ -100,9 +104,9 @@ public class Main {
 
         // get post by Id
         get("/:id", (req, res) -> {
-            Integer id  = Integer.parseInt(req.params(":id"));
+            Integer requestId  = Integer.parseInt(req.params(":id"));
 
-            Post post = findPostbyId(id);
+            Post post = findPostById(res, requestId);
 
             PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
 
@@ -118,32 +122,12 @@ public class Main {
 
             Post post = parseAndValidatePostRequest(req, gson, validator);
 
-            Boolean isSuccessDBOperation = true;
-
-            try (Connection connection = DatabaseUtil.getConnection()) {
-                // create SQL Query to Insert data to DB
-                String query = "INSERT INTO posts (title, content, is_deleted) VALUES (?, ?, ?)";
-
-                try (PreparedStatement ps = connection.prepareStatement(query)) {
-                    ps.setString(1, post.getTitle());
-                    ps.setString(2, post.getContent());
-                    ps.setBoolean(3, post.isDeleted());
-
-                    int rowsAffected = ps.executeUpdate();
-                    if (!(rowsAffected > 0))
-                        isSuccessDBOperation = false;
-
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                throw new RuntimeException("Database error");
-            }
+            Boolean isSuccessDBOperation = insertPost(res, post);
 
             if (Boolean.TRUE.equals(isSuccessDBOperation)) {
                 PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
 
-                log.info("Suucess update post with id : {}", id);
+                log.info("Suucess create post with id : {}", id);
 
                 res.status(HttpStatus.CREATED_201);
 
@@ -151,49 +135,142 @@ public class Main {
                 return gson.toJson(successCreateAPost);
             }
 
-            throw new RuntimeException("Failed to create post.");
+            throw new DatabaseException("Failed to create post.");
 
         });
 
         // update post
         put("/:id", (req, res) -> {
-            Integer id  = Integer.parseInt(req.params(":id"));
+            Integer requestId  = Integer.parseInt(req.params(":id"));
 
-            Post post = findPostbyId(id);
+            Post post = findPostById(res, requestId);
 
             Post newPost = parseAndValidatePostRequest(req, gson, validator);
 
             post.setTitle(newPost.getTitle());
             post.setContent(newPost.getContent());
 
-            database.computeIfPresent(post.getId(), (key, value) -> post);
+            Boolean isSuccessDBOperation = updatePost(res, post);
 
-            PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
+            if (Boolean.TRUE.equals(isSuccessDBOperation)) {
+                PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
 
-            res.status(HttpStatus.ACCEPTED_202);
+                log.info("Suucess update post with id : {}", post.getId());
 
-            BaseResponse<PostResponseDto> successUpdateAPost = BaseResponse.generateResponse(HttpStatus.ACCEPTED_202, "Success update a post", postResponseDto);
-            return gson.toJson(successUpdateAPost);
+                res.status(HttpStatus.OK_200);
+
+                BaseResponse<PostResponseDto> successCreateAPost = BaseResponse.generateResponse(HttpStatus.OK_200, "Success update a post", postResponseDto);
+                return gson.toJson(successCreateAPost);
+            }
+
+            throw new DatabaseException("Failed to update post.");
         });
 
         // delete post
         delete("/:id", (req, res) -> {
 
             Integer id  = Integer.parseInt(req.params(":id"));
-            Post post = findPostbyId(id);
+            Post post = findPostById(res, id);
 
             post.setDeleted(true);
 
-            database.computeIfPresent(post.getId(), (key, value) -> post);
+            Boolean isSuccessDBOperation = updatePost(res, post);
 
-            PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
+            if (Boolean.TRUE.equals(isSuccessDBOperation)) {
+                PostResponseDto postResponseDto = modelMapper.map(post, PostResponseDto.class);
 
-            res.status(HttpStatus.OK_200);
+                log.info("Suucess delete post with id : {}", post.getId());
 
-            BaseResponse<PostResponseDto> successDeleteAPost = BaseResponse.generateResponse(HttpStatus.OK_200, "Success delete a post", postResponseDto);
-            return gson.toJson(successDeleteAPost);
+                res.status(HttpStatus.OK_200);
+
+                BaseResponse<PostResponseDto> successCreateAPost = BaseResponse.generateResponse(HttpStatus.OK_200, "Success delete a post", postResponseDto);
+                return gson.toJson(successCreateAPost);
+            }
+
+            throw new DatabaseException("Failed to delete post.");
         });
 
+    }
+
+    private static Boolean updatePost(Response res, Post post) {
+        boolean isSuccessDBOperation = true;
+
+        try (Connection connection = DatabaseUtil.getConnection()) {
+            // create SQL Query to Insert data to DB
+            String query = "UPDATE posts SET title=?, content=?, is_deleted=? WHERE id=? ";
+
+            try (PreparedStatement ps = connection.prepareStatement(query)) {
+                ps.setString(1, post.getTitle());
+                ps.setString(2, post.getContent());
+                ps.setBoolean(3, post.isDeleted());
+                ps.setInt(4, post.getId());
+
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected <= 0)
+                    isSuccessDBOperation = false;
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
+            throw new DatabaseException(DATABASE_ERROR);
+        }
+        return isSuccessDBOperation;
+    }
+
+    private static Boolean insertPost(Response res, Post post) {
+        boolean isSuccessDBOperation = true;
+
+        try (Connection connection = DatabaseUtil.getConnection()) {
+            // create SQL Query to Insert data to DB
+            String query = "INSERT INTO posts (title, content, is_deleted) VALUES (?, ?, ?)";
+
+            try (PreparedStatement ps = connection.prepareStatement(query)) {
+                ps.setString(1, post.getTitle());
+                ps.setString(2, post.getContent());
+                ps.setBoolean(3, post.isDeleted());
+
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected <= 0)
+                    isSuccessDBOperation = false;
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
+            throw new DatabaseException(DATABASE_ERROR);
+        }
+        return isSuccessDBOperation;
+    }
+
+    private static Post findPostById(Response res, Integer requestId) {
+        Post post = null;
+
+        try (Connection connection = DatabaseUtil.getConnection()) {
+            String query = "SELECT * FROM posts WHERE id = ? AND is_deleted = false";
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setInt(1, requestId);
+                ResultSet resultSet = statement.executeQuery();
+                while (resultSet.next()) {
+                    Integer id = resultSet.getInt("id");
+                    String title = resultSet.getString("title");
+                    String content = resultSet.getString("content");
+                    boolean isDeleted = resultSet.getBoolean("is_deleted");
+
+                    post = new Post(id, title, content, isDeleted);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
+            throw new DatabaseException(DATABASE_ERROR);
+        }
+
+        if (Objects.isNull(post)) {
+            throw new NotFoundException("Post not found");
+        }
+
+        return post;
     }
 
     private static Post parseAndValidatePostRequest(Request req, Gson gson, Validator validator) {
@@ -202,7 +279,7 @@ public class Main {
         return post;
     }
 
-    private static Post findPostbyId(Integer id) {
+    private static Post findPostById(Integer id) {
         log.info("Find post with id = [{}]", id);
 
         return Optional.ofNullable(database.get(id))
@@ -222,7 +299,7 @@ public class Main {
             });
 
             // Throw a RuntimeException with all the violation messages
-            throw new RuntimeException(errorMessage.toString());
+            throw new ValidationException(errorMessage.toString());
         }
 
         // Log if there are no violations (DTO is valid)
