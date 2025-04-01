@@ -81,6 +81,13 @@
             <version>42.2.23</version> <!-- Check for the latest version -->
         </dependency>
 
+        <!-- Connection Pool -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>
