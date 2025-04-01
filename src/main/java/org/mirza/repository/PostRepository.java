@@ -1,4 +1,4 @@
-package org.mirza.dto.repository;
+package org.mirza.repository;
 
 import org.mirza.dto.pagination.PaginationRequestDto;
 import org.mirza.entity.Post;

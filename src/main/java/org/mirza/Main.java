@@ -7,7 +7,7 @@ import org.mirza.dto.BaseResponse;
 import org.mirza.dto.ErrorResponse;
 import org.mirza.dto.pagination.PaginationDto;
 import org.mirza.dto.pagination.PaginationRequestDto;
-import org.mirza.dto.repository.PostRepositoryImpl;
+import org.mirza.repository.PostRepositoryImpl;
 import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
 import org.mirza.exception.DatabaseException;

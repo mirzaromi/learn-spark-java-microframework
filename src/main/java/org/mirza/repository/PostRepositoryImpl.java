@@ -1,4 +1,4 @@
-package org.mirza.dto.repository;
+package org.mirza.repository;
 
 import org.mirza.dto.pagination.PaginationRequestDto;
 import org.mirza.entity.Post;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.mirza.dto.constant.GlobalConstant.DATABASE_ERROR;
+import static org.mirza.constant.GlobalConstant.DATABASE_ERROR;
 
 public class PostRepositoryImpl implements PostRepository {
     @Override
