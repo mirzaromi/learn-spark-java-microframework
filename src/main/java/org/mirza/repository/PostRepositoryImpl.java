@@ -4,8 +4,7 @@ import org.mirza.dto.pagination.PaginationRequestDto;
 import org.mirza.entity.Post;
 import org.mirza.exception.DatabaseException;
 import org.mirza.exception.NotFoundException;
-import org.mirza.util.DatabaseUtil;
-import spark.Response;
+import org.mirza.config.DatabaseConfig;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,7 +19,7 @@ import static org.mirza.constant.GlobalConstant.DATABASE_ERROR;
 public class PostRepositoryImpl implements PostRepository {
     @Override
     public List<Post> getAllPost(PaginationRequestDto paginationRequest) {
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             List<Post> tempPosts = new ArrayList<>();
 
             String query = "SELECT * FROM posts WHERE is_deleted = false ORDER BY ? LIMIT ? OFFSET ?";
@@ -49,7 +48,7 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public Integer countAllPost() {
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             int totalData = 0;
 
             try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM posts WHERE is_deleted = false")) {
@@ -71,7 +70,7 @@ public class PostRepositoryImpl implements PostRepository {
     public Post findPostById(Integer requestId) {
         Post post = null;
 
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             String query = "SELECT * FROM posts WHERE id = ? AND is_deleted = false";
             try (PreparedStatement statement = connection.prepareStatement(query)) {
                 statement.setInt(1, requestId);
@@ -101,7 +100,7 @@ public class PostRepositoryImpl implements PostRepository {
     public Boolean insertPost(Post post) {
         boolean isSuccessDBOperation = true;
 
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             // create SQL Query to Insert data to DB
             String query = "INSERT INTO posts (title, content, is_deleted) VALUES (?, ?, ?)";
 
@@ -128,7 +127,7 @@ public class PostRepositoryImpl implements PostRepository {
     public Boolean updatePost(Post post) {
         boolean isSuccessDBOperation = true;
 
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             // create SQL Query to Insert data to DB
             String query = "UPDATE posts SET title=?, content=?, is_deleted=? WHERE id=? ";
 
@@ -155,7 +154,7 @@ public class PostRepositoryImpl implements PostRepository {
     }
 
     private static void rollbackCommit() {
-        try (Connection connection = DatabaseUtil.getConnection()) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
             connection.rollback();
         } catch (SQLException ex) {
             throw new DatabaseException("Rollback failed: " + ex.getMessage());

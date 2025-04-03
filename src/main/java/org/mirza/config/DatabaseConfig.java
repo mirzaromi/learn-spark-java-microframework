@@ -3,10 +3,8 @@ package org.mirza.config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.mirza.util.DatabaseUtil;
 
 import javax.sql.DataSource;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -50,7 +48,7 @@ public class DatabaseConfig {
 
     private static Properties loadProperties() {
         Properties props = new Properties();
-        try (InputStream inputStream = DatabaseUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
+        try (InputStream inputStream = DatabaseConfig.class.getClassLoader().getResourceAsStream("database.properties")) {
             if (inputStream != null) {
                 props.load(inputStream);
             }

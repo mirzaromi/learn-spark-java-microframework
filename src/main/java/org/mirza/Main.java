@@ -35,9 +35,6 @@ public class Main {
         try {
             Gson gson = new Gson();
 
-
-            ModelMapper modelMapper = new ModelMapper();
-
             Properties props = loadProperties();
             int appPort = Integer.parseInt(props.getProperty("app.port", "8080"));
 
