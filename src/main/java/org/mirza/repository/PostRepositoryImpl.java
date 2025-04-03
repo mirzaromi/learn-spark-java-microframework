@@ -51,37 +51,6 @@ public class PostRepositoryImpl implements PostRepository {
     }
 
     @Override
-    public Boolean insertBulkPost(List<Post> posts) {
-        boolean isSuccessDBOperation = true;
-
-        try (Connection connection = DatabaseConfig.getConnection()) {
-            // create SQL Query to Insert data to DB
-            String query = "INSERT INTO posts (title, content, is_deleted) VALUES (?, ?, ?)";
-
-            PreparedStatement ps = connection.prepareStatement(query);
-
-            for (Post post : posts) {
-                ps.setString(1, post.getTitle());
-                ps.setString(2, post.getContent());
-                ps.setBoolean(3, post.isDeleted());
-                ps.addBatch();
-            }
-
-            int[] rowsAffected = ps.executeBatch();
-            if (rowsAffected.length == 0)
-                isSuccessDBOperation = false;
-
-            connection.commit();
-        } catch (Exception e) {
-            rollbackCommit();
-
-            e.printStackTrace();
-            throw new DatabaseException(DATABASE_ERROR);
-        }
-        return isSuccessDBOperation;
-    }
-
-    @Override
     public void save(Post post) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

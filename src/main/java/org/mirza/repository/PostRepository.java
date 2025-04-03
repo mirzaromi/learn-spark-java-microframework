@@ -15,8 +15,6 @@ public interface PostRepository {
 
     Optional<Post> findPostById(Integer requestId);
 
-    Boolean insertBulkPost(List<Post> posts);
-
     public void save(Post post);
 
     public void saveAll(List<Post> post);
