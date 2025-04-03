@@ -75,7 +75,7 @@ public class DatabaseConfig {
             return true;
         } catch (SQLException e) {
             log.error("database is not ready to accept connection");
-            throw new DatabaseException(e.getMessage());
+            return false;
         }
     }
 

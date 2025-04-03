@@ -53,6 +53,7 @@ public class RouteConfig {
 
     private void setUpExceptionHandling() {
         exception(Exception.class, (exception, req, res) -> {
+            exception.printStackTrace();
             log.warn(exception.getMessage());
             res.status(500);
             res.type("application/json");

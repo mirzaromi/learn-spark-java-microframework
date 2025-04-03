@@ -1,5 +1,6 @@
 package org.mirza.service;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.mirza.dto.pagination.PaginationDto;
 import org.mirza.dto.pagination.PaginationRequestDto;
@@ -7,6 +8,7 @@ import org.mirza.dto.request.PostRequestDto;
 import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
 import org.mirza.exception.DatabaseException;
+import org.mirza.exception.NotFoundException;
 import org.mirza.repository.PostRepository;
 import org.mirza.util.ValidatorUtil;
 import org.modelmapper.ModelMapper;
@@ -45,58 +47,53 @@ public class PostService {
     }
 
     public PostResponseDto getPostById(Integer requestId) {
-        Post post = postRepository.findPostById(requestId);
+        Post post = postRepository.findPostById(requestId)
+                .orElseThrow(() -> new NotFoundException("Post with id " + requestId + " not found."));
 
         return modelMapper.map(post, PostResponseDto.class);
     }
 
+    @Transactional
     public PostResponseDto createPost(Post post) {
-        Boolean isSuccessDBOperation = postRepository.insertPost(post);
-
-        if (Boolean.FALSE.equals(isSuccessDBOperation))
-            throw new DatabaseException("Failed to create post.");
+        postRepository.save(post);
 
         log.info("Success create post with id : {}", post.getId());
 
         return modelMapper.map(post, PostResponseDto.class);
     }
 
+    @Transactional
     public PostResponseDto updatePost(Integer requestId, Post newPost) {
-        Post post = postRepository.findPostById(requestId);
+        Post post = postRepository.findPostById(requestId)
+                .orElseThrow(() -> new NotFoundException("Post with id " + requestId + " not found."));
 
         post.setTitle(newPost.getTitle());
         post.setContent(newPost.getContent());
 
-        Boolean isSuccessDBOperation = postRepository.updatePost(post);
-
-        if (Boolean.FALSE.equals(isSuccessDBOperation))
-            throw new DatabaseException("Failed to update post.");
+        postRepository.save(post);
 
         log.info("Success update post with id : {}", post.getId());
 
         return modelMapper.map(post, PostResponseDto.class);
     }
 
+    @Transactional
     public PostResponseDto deletePost(Integer requestId) {
-        Post post = postRepository.findPostById(requestId);
+        Post post = postRepository.findPostById(requestId)
+                .orElseThrow(() -> new NotFoundException("Post with id " + requestId + " not found."));
 
         post.setDeleted(true);
 
-        Boolean isSuccessDBOperation = postRepository.updatePost(post);
-
-        if (Boolean.FALSE.equals(isSuccessDBOperation))
-            throw new DatabaseException("Failed to delete post.");
+       postRepository.save(post);
 
         log.info("Success delete post with id : {}", post.getId());
 
         return modelMapper.map(post, PostResponseDto.class);
     }
 
+    @Transactional
     public List<PostResponseDto> createBulkPost(List<Post> posts) {
-        Boolean isSuccessDBOperation = postRepository.insertBulkPost(posts);
-
-        if (Boolean.FALSE.equals(isSuccessDBOperation))
-            throw new DatabaseException("Failed to create post.");
+        postRepository.saveAll(posts);
 
         log.info("Success create {} posts", posts.size());
 

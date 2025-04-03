@@ -9,6 +9,7 @@ import org.mirza.dto.BaseResponse;
 import org.mirza.dto.ErrorResponse;
 import org.mirza.dto.pagination.PaginationDto;
 import org.mirza.dto.pagination.PaginationRequestDto;
+import org.mirza.exception.ConfigurationException;
 import org.mirza.repository.PostRepositoryImpl;
 import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
@@ -59,6 +60,7 @@ public class Main {
 
 
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("Error starting application {}", e.getMessage(), e);
             System.exit(1);
         }
@@ -82,7 +84,7 @@ public class Main {
                 props.load(inputStream);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ConfigurationException(e.getMessage());
         }
         return props;
     }
