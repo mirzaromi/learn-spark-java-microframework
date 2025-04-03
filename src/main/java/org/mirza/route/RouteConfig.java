@@ -29,6 +29,7 @@ public class RouteConfig {
             post("", PostController::createPost);
             put(":id", PostController::updatePost);
             delete(":id", PostController::deletePost);
+            post("/bulk", PostController::createBulkPost);
         });
 
     }

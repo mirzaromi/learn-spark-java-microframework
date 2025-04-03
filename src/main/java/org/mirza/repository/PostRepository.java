@@ -1,6 +1,7 @@
 package org.mirza.repository;
 
 import org.mirza.dto.pagination.PaginationRequestDto;
+import org.mirza.dto.response.PostResponseDto;
 import org.mirza.entity.Post;
 import spark.Response;
 
@@ -16,4 +17,6 @@ public interface PostRepository {
     Boolean insertPost(Post post);
 
     Boolean updatePost(Post post);
+
+    Boolean insertBulkPost(List<Post> posts);
 }

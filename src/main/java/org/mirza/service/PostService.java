@@ -56,7 +56,7 @@ public class PostService {
         if (Boolean.FALSE.equals(isSuccessDBOperation))
             throw new DatabaseException("Failed to create post.");
 
-        log.info("Suucess create post with id : {}", post.getId());
+        log.info("Success create post with id : {}", post.getId());
 
         return modelMapper.map(post, PostResponseDto.class);
     }
@@ -87,8 +87,19 @@ public class PostService {
         if (Boolean.FALSE.equals(isSuccessDBOperation))
             throw new DatabaseException("Failed to delete post.");
 
-        log.info("Suucess delete post with id : {}", post.getId());
+        log.info("Success delete post with id : {}", post.getId());
 
         return modelMapper.map(post, PostResponseDto.class);
+    }
+
+    public List<PostResponseDto> createBulkPost(List<Post> posts) {
+        Boolean isSuccessDBOperation = postRepository.insertBulkPost(posts);
+
+        if (Boolean.FALSE.equals(isSuccessDBOperation))
+            throw new DatabaseException("Failed to create post.");
+
+        log.info("Success create {} posts", posts.size());
+
+        return modelMapper.map(posts, new TypeToken<List<PostResponseDto>>(){}.getType());
     }
 }

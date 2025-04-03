@@ -1,6 +1,7 @@
 package org.mirza.util;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import org.mirza.entity.Post;
 import org.mirza.exception.ValidationException;
@@ -10,6 +11,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,5 +44,11 @@ public class ValidatorUtil {
 
             throw new ValidationException("Validation failed: " + errorMessage);
         }
+    }
+
+    public static List<Post> parseAndValidateBulkPostRequest(Request req, Gson gson) {
+        List<Post> posts = gson.fromJson(req.body(), new TypeToken<List<Post>>() {}.getType());
+        posts.forEach(ValidatorUtil::validateObject);
+        return posts;
     }
 }

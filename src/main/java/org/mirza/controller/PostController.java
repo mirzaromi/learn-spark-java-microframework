@@ -89,4 +89,15 @@ public class PostController {
         BaseResponse<PostResponseDto> successCreateAPost = BaseResponse.generateResponse(HttpStatus.OK_200, "Success delete a post", postResponseDto);
         return gson.toJson(successCreateAPost);
     }
+
+    public static String createBulkPost(Request req, Response res) {
+        List<Post> posts = ValidatorUtil.parseAndValidateBulkPostRequest(req, gson);
+
+        List<PostResponseDto> postResponseDto = postService.createBulkPost(posts);
+
+        res.status(HttpStatus.CREATED_201);
+
+        BaseResponse<List<PostResponseDto>> successCreateAPost = BaseResponse.generateResponse(HttpStatus.CREATED_201, "Success create a post", postResponseDto);
+        return gson.toJson(successCreateAPost);
+    }
 }
