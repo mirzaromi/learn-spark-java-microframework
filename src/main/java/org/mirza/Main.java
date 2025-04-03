@@ -55,12 +55,7 @@ public class Main {
 
 
             // Add shutdown hook to close resource
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                log.info("Shutting down application...");
-                stop();
-                DatabaseConfig.closeDataSource();
-                log.info("Application stopped successfully");
-            }));
+            shutdownApplication();
 
 
         } catch (Exception e) {
@@ -69,6 +64,15 @@ public class Main {
         }
 
 
+    }
+
+    private static void shutdownApplication() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Shutting down application...");
+            stop();
+            DatabaseConfig.closeDataSource();
+            log.info("Application stopped successfully");
+        }));
     }
 
     private static Properties loadProperties() throws IOException {
