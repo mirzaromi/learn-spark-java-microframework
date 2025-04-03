@@ -48,6 +48,12 @@ public class Main {
             awaitInitialization();
             log.info("Application started successfully on port {}", appPort);
 
+            if (!DatabaseConfig.isDatabaseReady()) {
+                log.error("Database is not ready to accept connection, Exiting...");
+                System.exit(1);
+            }
+
+
             // Add shutdown hook to close resource
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 log.info("Shutting down application...");

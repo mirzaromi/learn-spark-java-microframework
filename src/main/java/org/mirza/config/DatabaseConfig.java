@@ -3,6 +3,7 @@ package org.mirza.config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
+import org.mirza.exception.DatabaseException;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -16,7 +17,12 @@ public class DatabaseConfig {
     private static HikariDataSource datasource;
 
     static {
-
+        try {
+            initializeDataSource();
+        } catch (Exception e) {
+            log.error("Error initializing database: {}", e.getMessage(), e);
+            throw new DatabaseException("Failed to initialize database");
+        }
     }
 
     private static void initializeDataSource() {
@@ -48,7 +54,7 @@ public class DatabaseConfig {
 
     private static Properties loadProperties() {
         Properties props = new Properties();
-        try (InputStream inputStream = DatabaseConfig.class.getClassLoader().getResourceAsStream("database.properties")) {
+        try (InputStream inputStream = DatabaseConfig.class.getClassLoader().getResourceAsStream("application.properties")) {
             if (inputStream != null) {
                 props.load(inputStream);
             }
@@ -60,6 +66,17 @@ public class DatabaseConfig {
 
     public static Connection getConnection() throws SQLException {
         return datasource.getConnection();
+    }
+
+    public static boolean isDatabaseReady() {
+        try {
+            getConnection().close();
+            log.info("Database is ready");
+            return true;
+        } catch (SQLException e) {
+            log.error("database is not ready to accept connection");
+            throw new DatabaseException(e.getMessage());
+        }
     }
 
     public static DataSource getDataSource() {
