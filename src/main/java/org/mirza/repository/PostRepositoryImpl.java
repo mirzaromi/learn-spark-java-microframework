@@ -19,7 +19,7 @@ import static org.mirza.constant.GlobalConstant.DATABASE_ERROR;
 
 public class PostRepositoryImpl implements PostRepository {
     @Override
-    public List<Post> getAllPost(Response res, PaginationRequestDto paginationRequest) {
+    public List<Post> getAllPost(PaginationRequestDto paginationRequest) {
         try (Connection connection = DatabaseUtil.getConnection()) {
             List<Post> tempPosts = new ArrayList<>();
 
@@ -43,13 +43,12 @@ public class PostRepositoryImpl implements PostRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            res.status(500);
             throw new DatabaseException(DATABASE_ERROR);
         }
     }
 
     @Override
-    public Integer countAllPost(Response res) {
+    public Integer countAllPost() {
         try (Connection connection = DatabaseUtil.getConnection()) {
             int totalData = 0;
 
@@ -64,13 +63,12 @@ public class PostRepositoryImpl implements PostRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            res.status(500);
             throw new DatabaseException(DATABASE_ERROR);
         }
     }
 
     @Override
-    public Post findPostById(Response res, Integer requestId) {
+    public Post findPostById(Integer requestId) {
         Post post = null;
 
         try (Connection connection = DatabaseUtil.getConnection()) {
@@ -89,7 +87,6 @@ public class PostRepositoryImpl implements PostRepository {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            res.status(500);
             throw new DatabaseException(DATABASE_ERROR);
         }
 
@@ -101,7 +98,7 @@ public class PostRepositoryImpl implements PostRepository {
     }
 
     @Override
-    public Boolean insertPost(Response res, Post post) {
+    public Boolean insertPost(Post post) {
         boolean isSuccessDBOperation = true;
 
         try (Connection connection = DatabaseUtil.getConnection()) {
@@ -122,14 +119,13 @@ public class PostRepositoryImpl implements PostRepository {
             rollbackCommit();
 
             e.printStackTrace();
-            res.status(500);
             throw new DatabaseException(DATABASE_ERROR);
         }
         return isSuccessDBOperation;
     }
 
     @Override
-    public Boolean updatePost(Response res, Post post) {
+    public Boolean updatePost(Post post) {
         boolean isSuccessDBOperation = true;
 
         try (Connection connection = DatabaseUtil.getConnection()) {
@@ -153,7 +149,6 @@ public class PostRepositoryImpl implements PostRepository {
             rollbackCommit();
 
             e.printStackTrace();
-            res.status(500);
             throw new DatabaseException(DATABASE_ERROR);
         }
         return isSuccessDBOperation;

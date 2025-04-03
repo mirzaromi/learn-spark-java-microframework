@@ -7,13 +7,13 @@ import spark.Response;
 import java.util.List;
 
 public interface PostRepository {
-    List<Post> getAllPost(Response res, PaginationRequestDto paginationRequest);
+    List<Post> getAllPost(PaginationRequestDto paginationRequest);
 
-    Integer countAllPost(Response res);
+    Integer countAllPost();
 
-    Post findPostById(Response res, Integer requestId);
+    Post findPostById(Integer requestId);
 
-    Boolean insertPost(Response res, Post post);
+    Boolean insertPost(Post post);
 
-    Boolean updatePost(Response res, Post post);
+    Boolean updatePost(Post post);
 }
